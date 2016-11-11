@@ -23,7 +23,10 @@
     overflow: hidden;
   }
 
-  .v-ui[width-range~="0-800px"] {
+
+  .mt-small,
+  .mt-medium,
+  .mt-auto[width-range~="0-800px"] {
     .valo-menu-title {
       @include valo-gradient($color: $valo-menu-background-color);
       border-bottom-color: first-color(valo-border($color: $valo-menu-background-color));
@@ -33,7 +36,9 @@
     }
   }
 
-  .v-ui[width-range~="801px-"] {
+  .mt-large,
+  .mt-huge,
+  .mt-auto[width-range~="801px-"] {
     .valo-menu {
       @include animation(valo-animate-in-slide-right 700ms 700ms backwards);
     }
@@ -70,7 +75,9 @@
     }
   }
 
-  .v-ui[width-range~="0-800px"] {
+  .mt-small,
+  .mt-medium,
+  .mt-auto[width-range~="0-800px"] {
     .v-menubar-user-menu > .v-menubar-menuitem {
       max-width: none;
       margin-right: .5em;
@@ -286,8 +293,12 @@
     }
   }
 
-  .v-ios7 & .v-ui[width-range~="0-800px"],
-  .v-ios8 & .v-ui[width-range~="0-800px"] {
+  .v-ios7 & .mt-small,
+  .v-ios8 & .mt-small,
+  .v-ios7 & .mt-medium,
+  .v-ios8 & .mt-medium,
+  .v-ios7 & .mt-auto[width-range~="0-800px"],
+  .v-ios8 & .mt-auto[width-range~="0-800px"] {
     padding-top: 20px + $v-unit-size;
 
     .v-loading-indicator {

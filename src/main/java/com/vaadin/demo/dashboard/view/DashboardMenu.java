@@ -1,12 +1,16 @@
 package com.vaadin.demo.dashboard.view;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import com.google.common.eventbus.Subscribe;
+import com.vaadin.data.Property.ValueChangeEvent;
+import com.vaadin.data.Property.ValueChangeListener;
 import com.vaadin.demo.dashboard.DashboardUI;
 import com.vaadin.demo.dashboard.component.ProfilePreferencesWindow;
 import com.vaadin.demo.dashboard.domain.Transaction;
 import com.vaadin.demo.dashboard.domain.User;
+import com.vaadin.demo.dashboard.event.DashboardEvent.BrowserResizeEvent;
 import com.vaadin.demo.dashboard.event.DashboardEvent.NotificationsCountUpdatedEvent;
 import com.vaadin.demo.dashboard.event.DashboardEvent.PostViewChangeEvent;
 import com.vaadin.demo.dashboard.event.DashboardEvent.ProfileUpdatedEvent;
@@ -31,13 +35,17 @@ import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.DragAndDropWrapper;
 import com.vaadin.ui.DragAndDropWrapper.DragStartMode;
+import com.vaadin.ui.HasComponents;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.MenuBar;
 import com.vaadin.ui.MenuBar.Command;
 import com.vaadin.ui.MenuBar.MenuItem;
+import com.vaadin.ui.OptionGroup;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.UI;
+import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 
 /**
@@ -46,6 +54,17 @@ import com.vaadin.ui.themes.ValoTheme;
  */
 @SuppressWarnings({ "serial", "unchecked" })
 public final class DashboardMenu extends CustomComponent {
+
+    private enum MenuType {
+        AUTOMATIC("mt-auto"), HUGE("mt-huge"), LARGE("mt-large"), MEDIUM(
+                "mt-medium"), SMALL("mt-small");
+
+        String style;
+
+        private MenuType(String style) {
+            this.style = style;
+        }
+    }
 
     public static final String ID = "dashboard-menu";
     public static final String REPORTS_BADGE_ID = "dashboard-menu-reports-badge";
@@ -95,16 +114,16 @@ public final class DashboardMenu extends CustomComponent {
     }
 
     private User getCurrentUser() {
-        return (User) VaadinSession.getCurrent().getAttribute(
-                User.class.getName());
+        return (User) VaadinSession.getCurrent()
+                .getAttribute(User.class.getName());
     }
 
     private Component buildUserMenu() {
         final MenuBar settings = new MenuBar();
         settings.addStyleName("user-menu");
         final User user = getCurrentUser();
-        settingsItem = settings.addItem("", new ThemeResource(
-                "img/profile-pic-300px.jpg"), null);
+        settingsItem = settings.addItem("",
+                new ThemeResource("img/profile-pic-300px.jpg"), null);
         updateUserName(null);
         settingsItem.addItem("Edit Profile", new Command() {
             @Override
@@ -132,7 +151,8 @@ public final class DashboardMenu extends CustomComponent {
         Button valoMenuToggleButton = new Button("Menu", new ClickListener() {
             @Override
             public void buttonClick(final ClickEvent event) {
-                if (getCompositionRoot().getStyleName().contains(STYLE_VISIBLE)) {
+                if (getCompositionRoot().getStyleName()
+                        .contains(STYLE_VISIBLE)) {
                     getCompositionRoot().removeStyleName(STYLE_VISIBLE);
                 } else {
                     getCompositionRoot().addStyleName(STYLE_VISIBLE);
@@ -163,10 +183,8 @@ public final class DashboardMenu extends CustomComponent {
 
                     @Override
                     public void drop(final DragAndDropEvent event) {
-                        UI.getCurrent()
-                                .getNavigator()
-                                .navigateTo(
-                                        DashboardViewType.REPORTS.getViewName());
+                        UI.getCurrent().getNavigator().navigateTo(
+                                DashboardViewType.REPORTS.getViewName());
                         Table table = (Table) event.getTransferable()
                                 .getSourceComponent();
                         DashboardEventBus.post(new TransactionReportEvent(
@@ -197,6 +215,32 @@ public final class DashboardMenu extends CustomComponent {
 
             menuItemsLayout.addComponent(menuItemComponent);
         }
+
+        final OptionGroup optionGroup = new OptionGroup("Menu type",
+                Arrays.asList(MenuType.values()));
+        optionGroup.addValueChangeListener(new ValueChangeListener() {
+            @Override
+            public void valueChange(ValueChangeEvent event) {
+                System.out.println(
+                        "Value changed! " + event.getProperty().getValue());
+                UI ui = UI.getCurrent();
+                for (MenuType mt : MenuType.values()) {
+                    ui.removeStyleName(mt.style);
+                }
+                ui.addStyleName(((MenuType) optionGroup.getValue()).style);
+                DashboardEventBus.post(new BrowserResizeEvent());
+                HasComponents parent = optionGroup.getParent();
+                while (!(parent instanceof Window) && parent != null) {
+                    parent = parent.getParent();
+                }
+                if (parent != null) {
+                    ((Window) parent).close();
+                }
+                optionGroup.setParent(null);
+            }
+        });
+        optionGroup.setValue(MenuType.AUTOMATIC);
+        menuItemsLayout.addComponent(new MenuSelectionButton(optionGroup));
         return menuItemsLayout;
 
     }
@@ -275,6 +319,30 @@ public final class DashboardMenu extends CustomComponent {
             if (event.getView() == view) {
                 addStyleName(STYLE_SELECTED);
             }
+        }
+    }
+
+    public final class MenuSelectionButton extends Button {
+
+        public MenuSelectionButton(final OptionGroup optionGroup) {
+            setPrimaryStyleName("valo-menu-item");
+            setIcon(FontAwesome.GEARS);
+            setCaption("Settings");
+            DashboardEventBus.register(this);
+            addClickListener(new ClickListener() {
+                @Override
+                public void buttonClick(final ClickEvent event) {
+                    Window window = new Window();
+                    window.setWidth("200px");
+                    window.center();
+                    window.setModal(true);
+                    VerticalLayout verticalLayout = new VerticalLayout(
+                            optionGroup);
+                    verticalLayout.setMargin(true);
+                    window.setContent(verticalLayout);
+                    UI.getCurrent().addWindow(window);
+                }
+            });
         }
     }
 }
